@@ -1,6 +1,6 @@
-maintainer       "YOUR_COMPANY_NAME"
-maintainer_email "YOUR_EMAIL"
-license          "All rights reserved"
+maintainer       "Tom Hornos"
+maintainer_email "tom.hornos@gmail.com"
+license          "Public Domain"
 description      "Installs/Configures slurm-mpi-cluster"
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version          "0.0.3"
+version          "1.0.0"

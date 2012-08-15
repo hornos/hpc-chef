@@ -1,0 +1,4 @@
+127.0.0.1 localhost
+<% @node.slurm['hosts'].each do |ip, name| -%>
+<%= ip %> <%= name %>
+<% end -%>
