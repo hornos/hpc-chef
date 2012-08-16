@@ -1,4 +1,4 @@
 127.0.0.1 localhost
-<% @node.slurm['hosts'].each do |ip, name| -%>
-<%= ip %> <%= name %>
+<% node.nodes.map {|n| [n[:ip],n[:name]]}.compact.each do |ip, name| -%>
+<%= ip %> <%= name.to_s %>
 <% end -%>

@@ -1,63 +1,61 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+#
+# https://gist.github.com/2404910
 
-# Computing cluster model
-# TODO: https://gist.github.com/2469037
-# TODO: defaults from here, cluster size
+
+# include_vagrantfile = File.expand_path("Vagrantfile.pkg", __FILE__)
+# load include_vagrantfile if File.exist?(include_vagrantfile)
+
+nodes = [
+{ :name => :head, :ip => '10.10.10.10', :cpus =>1, :role=>'slurm-headnode', :nfs => 'server'},
+{ :name => :c001,  :ip => '10.10.10.11', :cpus =>1, :role=>'slurm-compnode', :nfs => 'client'  }
+]
+munge = {:key=>"0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"}
+nfs = { :exports => ["/scratch"] }
+
 
 Vagrant::Config.run do |config|
-  config.vm.define :head do |config|
-    config.vm.box = "precise64"
-    config.vm.box_url = "http://files.vagrantup.com/precise64.box"
-    config.vm.customize ["modifyvm", :id, "--rtcuseutc", "on"]
-    config.vm.customize ["modifyvm", :id, "--memory", 256]
-    config.vm.customize ["modifyvm", :id, "--cpus", "1"]
-    config.vm.network :hostonly, "10.10.10.10"
-    config.vm.host_name = 'head'
 
-    config.vm.provision :chef_solo do |chef|
-      chef.cookbooks_path = "cookbooks"
-      chef.roles_path = "roles"
-      chef.data_bags_path = "data_bags"
-      chef.add_role "slurm-headnode"
-    end
-
+  # defaults
+  vm_default = proc do |cfg|
+    cfg.vm.box = "precise64"
+    cfg.vm.box_url = "http://files.vagrantup.com/precise64.box"
+    cfg.vm.customize ["modifyvm", :id, "--rtcuseutc", "on"]
+    cfg.vm.customize ["modifyvm", :id, "--memory", 256]
   end
 
-  config.vm.define :c01 do |config|
-    config.vm.box = "precise64"
-    config.vm.box_url = "http://files.vagrantup.com/precise64.box"
-    config.vm.customize ["modifyvm", :id, "--rtcuseutc", "on"]
-    config.vm.customize ["modifyvm", :id, "--memory", 256]
-    config.vm.customize ["modifyvm", :id, "--cpus", "1"]
-    config.vm.network :hostonly, "10.10.10.11"
-    config.vm.host_name = 'c01'
-
-    config.vm.provision :chef_solo do |chef|
-      chef.cookbooks_path = "cookbooks"
-      chef.roles_path = "roles"
-      chef.data_bags_path = "data_bags"
-      chef.add_role "slurm-computenode"
-    end
+  chef_default = proc do |chef|
+    chef.cookbooks_path = "cookbooks"
+    chef.roles_path     = "roles"
+    chef.data_bags_path = "data_bags"
   end
 
-  config.vm.define :c02 do |config|
-    config.vm.box = "precise64"
-    config.vm.box_url = "http://files.vagrantup.com/precise64.box"
-    config.vm.customize ["modifyvm", :id, "--rtcuseutc", "on"]
-    config.vm.customize ["modifyvm", :id, "--memory", 256]
-    config.vm.customize ["modifyvm", :id, "--cpus", "1"]
-    config.vm.network :hostonly, "10.10.10.12"
-    config.vm.host_name = 'c02'
+  # nodes
+  nodes.each do |opts|
+    config.vm.define opts[:name] do |config|
+      vm_default.call(config)
+      config.vm.customize ["modifyvm", :id, "--cpus", opts[:cpus]]
+      config.vm.network :hostonly, opts[:ip]
+      config.vm.host_name = opts[:name].to_s
 
-    config.vm.provision :chef_solo do |chef|
-      chef.cookbooks_path = "cookbooks"
-      chef.roles_path = "roles"
-      chef.data_bags_path = "data_bags"
-      chef.add_role "slurm-computenode"
+      config.vm.provision :chef_solo do |chef|
+        chef_default.call(chef)
+        chef.add_role opts[:role].to_s
+        # munge_key
+        # http://code.google.com/p/munge/wiki/InstallationGuide
+        # echo -n "foo" | sha1sum | cut -d' ' -f1
+
+        # access from chef node[:]
+        chef.json = {
+          :nodes => nodes,
+          :munge => munge,
+          :nfs => nfs
+        }
+      end
+
     end
-  end
-
+  end # nodes
 
   # All Vagrant configuration is done here. The most common configuration
   # options are documented and commented below. For a complete reference,
