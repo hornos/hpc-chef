@@ -4,8 +4,7 @@
 
 # http://www.codypowell.com/taods/2011/07/amazon-elastic-compute-cloud-lessons-learned.html
 
-# cluster definition
-require 'cluster'
+Kernel.load 'Clusterfile'
 
 Vagrant::Config.run do |config|
 

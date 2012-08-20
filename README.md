@@ -7,8 +7,7 @@ Slurm-based basic HPC cluster with Ganglia
 Usage
 =====
 
-Edit cluster.rb
-vagrant up
-vagrant ssh head
-sinfo
-gstat
+* Edit Clusterfile
+* vagrant up
+* vagrant ssh head
+* sinfo / gstat
