@@ -3,3 +3,5 @@
 .vagrant
 .DS*
 scr/*
+test/*
+github/*

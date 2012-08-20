@@ -2,8 +2,11 @@
 # Put this file on all nodes of your cluster.
 # See the slurm.conf man page for more information.
 #
-ControlMachine=<%= node.nodes.map {|n| n[:name] if n[:role] == 'slurm-headnode'}.compact[0].to_s %>
-ControlAddr=<%= node.nodes.map {|n| n[:ip] if n[:role] == 'slurm-headnode'}.compact[0] %>
+<% cluster=node[:cluster] %>
+<% name,ip=cluster[:nodes].map {|k,n| [k,n[:pri_addr]] if n[:roles] =~ /headnode/}.compact[0] %>
+<% puts "#{ip} #{name}" %>
+ControlMachine=<%= name %>
+ControlAddr=<%= ip %>
 #BackupController=
 #BackupAddr=
 # 
@@ -41,7 +44,7 @@ ProctrackType=proctrack/pgid
 #PropagatePrioProcess=0 
 #PropagateResourceLimits= 
 #PropagateResourceLimitsExcept= 
-ReturnToService=1
+ReturnToService=2
 #SallocDefaultCommand= 
 SlurmctldPidFile=/var/run/slurmctld.pid
 SlurmctldPort=6817
@@ -150,10 +153,11 @@ SlurmdLogFile=/tmp/slurmd.log
 # 
 # 
 # COMPUTE NODES
-# TODO: Sockets
-<% node.nodes.map {|n| [n[:ip],n[:name]] if n[:role] == 'slurm-compnode' }.compact.each do |ip,name| -%>
-NodeName=<%= name.to_s %> NodeAddr=<%= ip %> State=UNKNOWN 
+<% cluster=node[:cluster] %>
+<% cluster[:nodes].map {|k,n| [n[:pri_addr],k.to_s,n[:cpus]] if n[:roles] =~ /compnode/}.compact.sort.each do |ip,name,cpu| -%>
+NodeName=<%= name %> NodeAddr=<%= ip %> CPUs=<%= cpu %> State=UNKNOWN 
 <% end -%>
 
 # PARTITIONS
-PartitionName=batch Nodes=<%= node.nodes.map {|n| n[:name] if n[:role] == 'slurm-compnode'}.compact * ","%> Default=YES MaxTime=INFINITE State=UP
+<% cluster=node[:cluster] %>
+PartitionName=batch Nodes=<%= cluster[:nodes].map {|k,n| k.to_s if n[:roles] =~ /compnode/}.compact.sort * ',' %> Default=YES MaxTime=INFINITE State=UP

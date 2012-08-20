@@ -1,0 +1,3 @@
+<% @node[:autofs][:maps].each do |map, opts| %>
+<%= map %> <%= opts[:source] %> <%= opts[:opts] %>
+<% end %>

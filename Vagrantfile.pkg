@@ -1,6 +1,0 @@
-
-nodes = [
-{ :name => :head, :ip => '10.10.10.10', :cpus =>1, :role=>'slurm-headnode' },
-{ :name => :c01, :ip => '10.10.10.11', :cpus =>1, :role=>'slurm-computenode' },
-{ :name => :c02, :ip => '10.10.10.12', :cpus =>1, :role=>'slurm-computenode' }
-]

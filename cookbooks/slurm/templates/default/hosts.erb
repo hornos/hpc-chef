@@ -1,0 +1,6 @@
+127.0.0.1 localhost
+<% cluster=node[:cluster] %>
+<% cluster[:nodes].map {|k,n| [n[:pri_addr],k.to_s,n[:alias]]}.compact.sort.each do |ip,name,al| -%>
+<%= ip %> <%= name %> <%= al %>
+<% end -%>
+# todo: internal names

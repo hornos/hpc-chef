@@ -25,10 +25,17 @@ template "/etc/slurm-llnl/slurm.conf" do
   source "slurm.conf.erb"
   owner "slurm"
   mode "0755"
+  notifies :run, "execute[reconfigure]"
 end
 
 # Enable and start the slurm service
 service "slurm-llnl" do
   action [:enable,:start]
+end
+
+execute "reconfigure" do 
+  command "sudo scontrol reconfigure"
+  action :nothing
+  not_if { node[:host][:roles] =~ /compnode/ }
 end
 

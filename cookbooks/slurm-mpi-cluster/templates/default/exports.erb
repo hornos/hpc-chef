@@ -1,3 +1,0 @@
-<% node.nfs[:exports].each do |dir| -%>
-<%= dir %>  <% node.nodes.map {|n| n[:name] if n[:nfs] }.compact.each do |client| -%><%= client %>(rw) <% end -%>
-<% end -%>

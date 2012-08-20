@@ -4,8 +4,9 @@
 package("nfs-common")
 package("nfs-kernel-server")
 
+cluster=node[:cluster]
 # Make sure the diretory to be exported exists
-node.nfs[:exports].each do |d|
+cluster[:nfs][:exports].each do |d|
   directory d do
     mode "0777"
     action :create
@@ -30,4 +31,3 @@ execute "exportfs" do
   command "exportfs -a"
   action :run
 end
-

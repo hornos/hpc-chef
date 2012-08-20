@@ -1,28 +1,23 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
-# https://gist.github.com/2404910
 
+# http://www.codypowell.com/taods/2011/07/amazon-elastic-compute-cloud-lessons-learned.html
 
-# include_vagrantfile = File.expand_path("Vagrantfile.pkg", __FILE__)
-# load include_vagrantfile if File.exist?(include_vagrantfile)
-
-nodes = [
-{ :name => :head, :ip => '10.10.10.10', :cpus =>1, :role=>'slurm-headnode', :nfs => 'server'},
-{ :name => :c001,  :ip => '10.10.10.11', :cpus =>1, :role=>'slurm-compnode', :nfs => 'client'  }
-]
-munge = {:key=>"0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"}
-nfs = { :exports => ["/scratch"] }
-
+# cluster definition
+require 'cluster'
 
 Vagrant::Config.run do |config|
 
   # defaults
   vm_default = proc do |cfg|
-    cfg.vm.box = "precise64"
-    cfg.vm.box_url = "http://files.vagrantup.com/precise64.box"
+    cfg.vm.box = "precise64-ruby-1.9.3-p194"
+    # cfg.vm.box_url = "https://dl.dropbox.com/u/14292474/vagrantboxes/precise64-ruby-1.9.3-p194.box"
     cfg.vm.customize ["modifyvm", :id, "--rtcuseutc", "on"]
     cfg.vm.customize ["modifyvm", :id, "--memory", 256]
+    # https://groups.google.com/forum/?fromgroups#!topic/vagrant-up/a2COzF4E0gc%5B1-25%5D
+    # http://serverfault.com/questions/414517/vagrant-virtualbox-host-only-multiple-node-networking-issue
+    # cfg.vm.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
   end
 
   chef_default = proc do |chef|
@@ -31,26 +26,47 @@ Vagrant::Config.run do |config|
     chef.data_bags_path = "data_bags"
   end
 
-  # nodes
-  nodes.each do |opts|
-    config.vm.define opts[:name] do |config|
-      vm_default.call(config)
-      config.vm.customize ["modifyvm", :id, "--cpus", opts[:cpus]]
-      config.vm.network :hostonly, opts[:ip]
-      config.vm.host_name = opts[:name].to_s
+  # configure nodes
+  $cluster[:nodes].each do |node,opts|
+    config.vm.define node.to_s do |cfg|
+      # defaults
+      vm_default[cfg]
 
+      # cpu
+      cfg.vm.customize ["modifyvm", :id, "--cpus", opts[:cpus]]
+
+      # nat
+      # cfg.vm.base_mac  = (1..6).map{"%0.2X"%rand(256)}.join(":")
+      # public & private
+      cfg.vm.network :hostonly, opts[:pri_addr]
+      # cfg.vm.network :bridged, opts[:pub_addr]
+      # networking issue
+      cfg.vm.host_name = node.to_s
+
+      # vb guest verson check
+      cfg.vbguest.auto_update = false
+      cfg.vbguest.no_remote   = true
+
+      # provision by chef solo
       config.vm.provision :chef_solo do |chef|
-        chef_default.call(chef)
-        chef.add_role opts[:role].to_s
-        # munge_key
-        # http://code.google.com/p/munge/wiki/InstallationGuide
-        # echo -n "foo" | sha1sum | cut -d' ' -f1
+        chef_default[chef]
+
+        # chef.environment = "_default"
+        chef.log_level = :debug
+
+        # process role string
+        if not opts[:roles].nil? then 
+          opts[:roles].gsub("\n",'').gsub(/\s+/,'').split(",").each do |role|
+            t,r = role.gsub("["," ").gsub("]","").split()
+            chef.add_role r if t == "role"
+            chef.add_recipe r if t == "recipe"
+          end
+        end
 
         # access from chef node[:]
         chef.json = {
-          :nodes => nodes,
-          :munge => munge,
-          :nfs => nfs
+          :cluster => $cluster,
+          :host => opts
         }
       end
 
